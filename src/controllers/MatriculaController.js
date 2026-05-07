@@ -2,7 +2,7 @@ const Matricula = require('../models/Matricula');
 
 const createMatricula = async (req, res) => {
     try {
-        const { alumno, apoderado, apoderado_suplente, direccion, salud } = req.body;
+        const { alumno, apoderado, apoderado_suplente, direccion, salud, electivos } = req.body;
 
         // Validación de datos del Alumno (Tabla alumnos)
         if (!alumno || !alumno.rut_estudiante || !alumno.nombres || !alumno.apellido_paterno || !alumno.id_curso) {
@@ -71,4 +71,13 @@ const getReporteMatriculas = async (req, res) => {
     }
 };
 
-module.exports = { createMatricula, getReporteMatriculas };
+const getStats = async (req, res) => {
+    try {
+        const stats = await Matricula.getStats();
+        res.status(200).json({ success: true, data: stats });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error al obtener estadísticas', error: error.message });
+    }
+};
+
+module.exports = { createMatricula, getReporteMatriculas, getStats };

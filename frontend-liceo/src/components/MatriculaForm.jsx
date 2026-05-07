@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const MatriculaForm = () => {
+  const [electivosDB, setElectivosDB] = useState([]);
+  const [cursosDB, setCursosDB] = useState([]);
+
   const [formData, setFormData] = useState({
     alumno: {
       rut_estudiante: '', rut_provisorio: '', nombres: '', nombre_social: '',
@@ -28,8 +31,32 @@ const MatriculaForm = () => {
       pertenece_pie: 0, diagnostico_pie: '', 
       beneficio_junaeb_alimentacion: 0, beneficio_junaeb_utiles: 0, 
       beneficio_dental: 0, beneficio_movilizacion: 0 
-    }
+    },
+    electivos: { religion: '', artes: '', especialidad: '' }
   });
+
+  // Cargar datos iniciales (electivos y cursos) desde el Backend al montar el componente
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Realizamos ambas peticiones en paralelo para optimizar la carga
+        const [electivosRes, cursosRes] = await Promise.all([
+          axios.get('http://localhost:3000/api/electivos'),
+          axios.get('http://localhost:3000/api/cursos')
+        ]);
+
+        if (electivosRes.data.success) {
+          setElectivosDB(electivosRes.data.data);
+        }
+        if (cursosRes.data.success) {
+          setCursosDB(cursosRes.data.data);
+        }
+      } catch (err) {
+        console.error("Error cargando datos iniciales:", err);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleNestedChange = (e, section) => {
     const { name, value, type, checked } = e.target;
@@ -60,109 +87,231 @@ const MatriculaForm = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="md:col-span-3"><h3 className="font-bold text-xl text-slate-700">1. Datos Personales del Estudiante</h3></div>
         <div className="md:col-span-1 text-right text-xs text-slate-400 italic">* Campos obligatorios</div>
-        
-        <input name="rut_estudiante" placeholder="RUT Estudiante *" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded focus:ring-2 focus:ring-slate-400 outline-none" required />
-        <input name="rut_provisorio" placeholder="RUT Provisorio (Opcional)" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" />
-        <input name="nombres" placeholder="Nombres" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" required />
-        <input name="nombre_social" placeholder="Nombre Social" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" />
-        <input name="apellido_paterno" placeholder="Apellido Paterno" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" required />
-        <input name="apellido_materno" placeholder="Apellido Materno" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" />
-        <select name="sexo" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded">
-          <option value="Masculino">Masculino</option>
-          <option value="Femenino">Femenino</option>
-          <option value="Otro">Otro</option>
-        </select>
-        <input type="date" name="fecha_nacimiento" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" />
-        <input name="email" type="email" placeholder="Email Alumno" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" />
-        <input name="telefono" placeholder="Teléfono Alumno" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" />
-        <input name="nacionalidad" placeholder="Nacionalidad" defaultValue="Chile - CL" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" />
-        <input name="etnia" placeholder="Etnia" defaultValue="No pertenece" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" />
-        <input name="id_curso" placeholder="ID Curso (ej: 1)" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded" required />
+
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">RUT Estudiante *</label>
+          <input name="rut_estudiante" placeholder="12.345.678-9" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded focus:ring-2 focus:ring-slate-400 outline-none" required />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">RUT Provisorio</label>
+          <input name="rut_provisorio" placeholder="Si aplica" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Nombres *</label>
+          <input name="nombres" placeholder="Ej: Juan Pedro" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400" required />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Nombre Social</label>
+          <input name="nombre_social" placeholder="Opcional" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Apellido Paterno *</label>
+          <input name="apellido_paterno" placeholder="Ej: Pérez" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400" required />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Apellido Materno</label>
+          <input name="apellido_materno" placeholder="Ej: Soto" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Sexo *</label>
+          <select name="sexo" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400 bg-white">
+            <option value="Masculino">Masculino</option>
+            <option value="Femenino">Femenino</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Fecha Nacimiento</label>
+          <input type="date" name="fecha_nacimiento" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Email Alumno</label>
+          <input name="email" type="email" placeholder="alumno@correo.cl" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Teléfono Alumno</label>
+          <input name="telefono" placeholder="+56 9..." onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Nacionalidad</label>
+          <input name="nacionalidad" defaultValue="Chile - CL" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Etnia</label>
+          <input name="etnia" defaultValue="No pertenece" onChange={(e) => handleNestedChange(e, 'alumno')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase text-blue-600">Curso Asignado *</label>
+          <select 
+            name="id_curso" 
+            value={formData.alumno.id_curso}
+            onChange={(e) => handleNestedChange(e, 'alumno')} 
+            className="p-2 border border-blue-200 rounded outline-none focus:ring-2 focus:ring-blue-400 bg-white" 
+            required
+          >
+            <option value="">Seleccione...</option>
+            {cursosDB.map(curso => (
+              <option key={curso.id_curso} value={curso.id_curso}>
+                {curso.nombre_nivel} - {curso.letra}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Sección Apoderado */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="md:col-span-3"><h3 className="font-bold text-lg text-slate-700">2. Información del Apoderado</h3></div>
         <div className="md:col-span-1"></div>
-        
-        <input name="rut_apoderado" placeholder="RUT Apoderado" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded" required />
-        <input name="nombres" placeholder="Nombres Apoderado" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded" required />
-        <input name="apellidos" placeholder="Apellidos Apoderado" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded" />
-        <select name="sexo" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded">
-          <option value="Femenino">Femenino</option>
-          <option value="Masculino">Masculino</option>
-          <option value="Otro">Otro</option>
-        </select>
-        <select name="id_parentesco" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded" required>
-          <option value="">Seleccione Parentesco</option>
-          <option value="1">Madre</option>
-          <option value="2">Padre</option>
-          <option value="3">Tutor/a</option>
-        </select>
-        <input name="email" type="email" placeholder="Email" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded" />
-        <input name="telefono" placeholder="Teléfono" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded" />
+
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">RUT Apoderado *</label>
+          <input name="rut_apoderado" placeholder="12.345.678-9" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded outline-none focus:border-slate-400" required />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Nombres *</label>
+          <input name="nombres" placeholder="Nombres" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded outline-none focus:border-slate-400" required />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Apellidos</label>
+          <input name="apellidos" placeholder="Apellidos" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Sexo</label>
+          <select name="sexo" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded outline-none focus:border-slate-400 bg-white">
+            <option value="Femenino">Femenino</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Parentesco *</label>
+          <select name="id_parentesco" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded outline-none focus:border-slate-400 bg-white" required>
+            <option value="">Seleccione...</option>
+            <option value="1">Madre</option>
+            <option value="2">Padre</option>
+            <option value="3">Tutor/a</option>
+          </select>
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Email</label>
+          <input name="email" type="email" placeholder="apoderado@correo.cl" onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Teléfono</label>
+          <input name="telefono" placeholder="+56 9..." onChange={(e) => handleNestedChange(e, 'apoderado')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
       </div>
 
       {/* Sección Apoderado Suplente (Opcional) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="md:col-span-4"><h3 className="font-bold text-xl text-slate-700 border-b pb-1">3. Apoderado Suplente (Opcional)</h3></div>
-        
-        <input name="rut_apoderado" placeholder="RUT Suplente" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded" />
-        <input name="nombres" placeholder="Nombres Suplente" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded" />
-        <input name="apellidos" placeholder="Apellidos Suplente" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded" />
-        <select name="sexo" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded">
-          <option value="Masculino">Masculino</option>
-          <option value="Femenino">Femenino</option>
-          <option value="Otro">Otro</option>
-        </select>
-        <select name="id_parentesco" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded">
-          <option value="">Parentesco Suplente</option>
-          <option value="1">Madre</option>
-          <option value="2">Padre</option>
-          <option value="4">Abuelo/a</option>
-          <option value="5">Otro Familiar</option>
-        </select>
-        <input name="email" type="email" placeholder="Email Suplente" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded" />
-        <input name="telefono" placeholder="Teléfono Suplente" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded" />
+
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">RUT Suplente</label>
+          <input name="rut_apoderado" placeholder="RUT" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Nombres</label>
+          <input name="nombres" placeholder="Nombres" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Apellidos</label>
+          <input name="apellidos" placeholder="Apellidos" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Parentesco</label>
+          <select name="id_parentesco" onChange={(e) => handleNestedChange(e, 'apoderado_suplente')} className="p-2 border rounded outline-none focus:border-slate-400 bg-white">
+            <option value="">Seleccione...</option>
+            <option value="1">Madre</option>
+            <option value="2">Padre</option>
+            <option value="4">Abuelo/a</option>
+            <option value="5">Otro Familiar</option>
+          </select>
+        </div>
       </div>
 
-      {/* Sección Dirección y Salud */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-        <div>
-          <h3 className="font-bold text-xl text-slate-700 mb-2 border-b pb-1">4. Residencia del Alumno</h3>
-          <div className="grid grid-cols-1 gap-2">
-            <input name="calle_pasaje" placeholder="Calle/Pasaje" onChange={(e) => handleNestedChange(e, 'direccion')} className="p-2 border rounded" />
-            <input name="numero" placeholder="Número/Casa" onChange={(e) => handleNestedChange(e, 'direccion')} className="p-2 border rounded" />
-            <input name="sector" placeholder="Sector/Población" onChange={(e) => handleNestedChange(e, 'direccion')} className="p-2 border rounded" />
-            <input name="id_comuna" placeholder="ID Comuna (Ej: 1)" onChange={(e) => handleNestedChange(e, 'direccion')} className="p-2 border rounded" required />
-          </div>
+      {/* Sección Residencia */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="md:col-span-4"><h3 className="font-bold text-xl text-slate-700 border-b pb-1">4. Residencia del Alumno</h3></div>
+        <div className="flex flex-col md:col-span-2">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Calle / Pasaje</label>
+          <input name="calle_pasaje" placeholder="Ej: Los Avellanos" onChange={(e) => handleNestedChange(e, 'direccion')} className="p-2 border rounded outline-none focus:border-slate-400" />
         </div>
-        <div className="md:col-span-2">
-          <h3 className="font-bold text-xl text-slate-700 mb-2 border-b pb-1">5. Ficha de Salud y Beneficios</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <select name="sistema_salud" onChange={(e) => handleNestedChange(e, 'salud')} className="p-2 border rounded w-full">
-                <option value="FONASA">FONASA</option>
-                <option value="ISAPRE">ISAPRE</option>
-                <option value="DIPRECA/CAPREDENA">DIPRECA/CAPREDENA</option>
-                <option value="Particular">Particular</option>
-              </select>
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2 text-sm text-slate-600">
-                  <input type="checkbox" name="pertenece_pie" onChange={(e) => handleNestedChange(e, 'salud')} /> Pertenece a PIE
-                </label>
-                <label className="flex items-center gap-2 text-sm text-slate-600">
-                  <input type="checkbox" name="beneficio_junaeb_alimentacion" onChange={(e) => handleNestedChange(e, 'salud')} /> Beneficio JUNAEB
-                </label>
-              </div>
-            </div>
-            <textarea 
-              name="diagnostico_pie" 
-              placeholder="Si pertenece a PIE, detalle diagnóstico aquí..." 
-              onChange={(e) => handleNestedChange(e, 'salud')} 
-              className="p-2 border rounded w-full h-24 text-sm"
-            />
-          </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Número</label>
+          <input name="numero" placeholder="123" onChange={(e) => handleNestedChange(e, 'direccion')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Sector</label>
+          <input name="sector" placeholder="Villa..." onChange={(e) => handleNestedChange(e, 'direccion')} className="p-2 border rounded outline-none focus:border-slate-400" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase text-blue-600">ID Comuna *</label>
+          <input name="id_comuna" placeholder="Ej: 1" onChange={(e) => handleNestedChange(e, 'direccion')} className="p-2 border border-blue-200 rounded outline-none focus:ring-1 focus:ring-slate-400" required />
+        </div>
+      </div>
+
+      {/* Sección Salud */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="md:col-span-4"><h3 className="font-bold text-xl text-slate-700 border-b pb-1">5. Ficha de Salud y Beneficios</h3></div>
+        <div className="flex flex-col">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Sistema de Salud *</label>
+          <select name="sistema_salud" onChange={(e) => handleNestedChange(e, 'salud')} className="p-2 border rounded w-full bg-white outline-none focus:border-slate-400">
+            <option value="FONASA">FONASA</option>
+            <option value="ISAPRE">ISAPRE</option>
+            <option value="DIPRECA/CAPREDENA">DIPRECA/CAPREDENA</option>
+            <option value="Particular">Particular</option>
+          </select>
+        </div>
+        <div className="flex flex-col justify-center gap-2 pt-4">
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" name="pertenece_pie" onChange={(e) => handleNestedChange(e, 'salud')} /> Pertenece a PIE
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" name="beneficio_junaeb_alimentacion" onChange={(e) => handleNestedChange(e, 'salud')} /> Beneficio JUNAEB
+          </label>
+        </div>
+        <div className="flex flex-col md:col-span-2">
+          <label className="text-xs font-bold text-slate-600 mb-1 uppercase">Detalle Diagnóstico (Si aplica)</label>
+          <textarea 
+            name="diagnostico_pie" 
+            onChange={(e) => handleNestedChange(e, 'salud')} 
+            className="p-2 border rounded w-full h-12 md:h-20 text-sm outline-none focus:border-slate-400"
+          />
+        </div>
+      </div>
+
+      {/* Sección Electivos (Basado en el nuevo script) */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="md:col-span-4"><h3 className="font-bold text-xl text-slate-700 border-b pb-1">6. Plan Electivo (1° Medio / Especialidad)</h3></div>
+        
+        <div className="flex flex-col">
+          <label className="text-sm font-semibold text-slate-600 mb-1">Clase de Religión</label>
+          <select name="religion" onChange={(e) => handleNestedChange(e, 'electivos')} className="p-2 border rounded bg-white">
+            <option value="">Seleccione opción...</option>
+            {electivosDB
+              .filter(e => e.nombre_categoria === 'Religión')
+              .map(e => (
+                <option key={e.id_electivo} value={e.id_electivo}>{e.nombre_electivo}</option>
+              ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col">
+          <label className="text-sm font-semibold text-slate-600 mb-1">Artes</label>
+          <select name="artes" onChange={(e) => handleNestedChange(e, 'electivos')} className="p-2 border rounded bg-white">
+            <option value="">Seleccione opción...</option>
+            {electivosDB
+              .filter(e => e.nombre_categoria === 'Artes')
+              .map(e => (
+                <option key={e.id_electivo} value={e.id_electivo}>{e.nombre_electivo}</option>
+              ))}
+          </select>
+        </div>
+        
+        <div className="md:col-span-2 text-xs text-slate-500 flex items-end pb-2 italic">
+          * Las opciones se habilitan según la disponibilidad del nivel.
         </div>
       </div>
 

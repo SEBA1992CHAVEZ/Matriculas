@@ -8,6 +8,7 @@ const matriculaRoutes = require('./routes/matriculaRoutes');
 const comunaRoutes = require('./routes/comunaRoutes');
 const nivelRoutes = require('./routes/nivelRoutes');
 const cursoRoutes = require('./routes/cursoRoutes');
+const electivoRoutes = require('./routes/electivoRoutes');
 
 const app = express();
 app.use(express.json());
@@ -28,6 +29,7 @@ app.use('/api/comunas', comunaRoutes);
 app.use('/api/niveles', nivelRoutes);
 app.use('/api/cursos', cursoRoutes);
 app.use('/api/matriculas', matriculaRoutes);
+app.use('/api/electivos', electivoRoutes);
 
 // Manejador de errores global
 app.use((err, req, res, next) => {

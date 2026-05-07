@@ -14,6 +14,7 @@ const LoginForm = () => {
 
   // Estados para el manejo de la UI (errores, carga)
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Manejador de cambios en los inputs del formulario
@@ -28,6 +29,7 @@ const LoginForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault(); // Previene el comportamiento por defecto del formulario (recargar la página)
     setError(''); // Limpia cualquier error previo
+    setSuccess(''); // Limpia cualquier mensaje de éxito previo
     setLoading(true); // Activa el estado de carga
 
     try {
@@ -38,10 +40,12 @@ const LoginForm = () => {
       if (response.data.success) {
         // Guarda el token JWT en el almacenamiento local del navegador
         localStorage.setItem('token', response.data.token);
-        alert('¡Login exitoso!');
+        setSuccess('¡Sesión iniciada con éxito! Redirigiendo...');
         
         // Redirige al usuario a la página de dashboard o principal
-        navigate('/dashboard'); 
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
       } else {
         // Si el backend devuelve un error pero success es false
         setError(response.data.message || 'Credenciales incorrectas');
@@ -62,14 +66,21 @@ const LoginForm = () => {
     <div className="flex items-center justify-center min-h-screen bg-slate-50">
       <form onSubmit={handleSubmit} className="bg-white p-10 rounded-xl shadow-xl border border-slate-200 w-full max-w-md">
         <div className="mb-8 text-center">
-          <h2 className="text-4xl font-black text-slate-900 tracking-tight">EduCate</h2>
-          <p className="text-slate-500 mt-2 text-sm font-medium">Sistema de Matrícula Institucional</p>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tight">Educatte</h2>
+          <p className="text-slate-500 mt-2 text-sm font-medium italic tracking-wide">Plataforma de Gestión Educativa</p>
         </div>
         
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6" role="alert">
             <strong className="font-bold text-sm">Error: </strong>
             <span className="block sm:inline">{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6" role="alert">
+            <strong className="font-bold text-sm">Éxito: </strong>
+            <span className="block sm:inline">{success}</span>
           </div>
         )}
 
@@ -116,7 +127,7 @@ const LoginForm = () => {
         </div>
 
         <p className="mt-8 text-center text-slate-400 text-xs font-medium italic">
-           © 2026 EduCate Derechos reservados.
+           © 2026 Educatte Derechos reservados.
         </p>
       </form>
     </div>

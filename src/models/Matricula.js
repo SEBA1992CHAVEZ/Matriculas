@@ -6,7 +6,7 @@ class Matricula {
         try {
             await connection.beginTransaction();
 
-            const { alumno, apoderado, apoderado_suplente, direccion, salud } = data;
+            const { alumno, apoderado, apoderado_suplente, direccion, salud, electivos } = data;
 
             // 1. Insertar Alumno
             const sqlAlumno = `INSERT INTO alumnos (rut_estudiante, rut_provisorio, nombres, nombre_social, apellido_paterno, apellido_materno, email, telefono, nacionalidad, etnia, fecha_nacimiento, sexo, id_curso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -57,6 +57,19 @@ class Matricula {
                 await insertarApoderado(apoderado_suplente, 0);
             }
 
+            // 5. Insertar Selección de Electivos (Nueva funcionalidad)
+            if (electivos) {
+                const sqlElectivo = `INSERT INTO alumno_electivos (id_alumno, id_electivo, anio_lectivo) VALUES (?, ?, ?)`;
+                const anioActual = 2026; // Definido según el contexto del sistema
+                
+                // Filtramos los electivos seleccionados (IDs que no vengan vacíos)
+                const seleccionados = Object.values(electivos).filter(id => id !== '');
+                
+                for (const id_electivo of seleccionados) {
+                    await connection.execute(sqlElectivo, [id_alumno, id_electivo, anioActual]);
+                }
+            }
+
             await connection.commit();
             return id_alumno;
         } catch (error) {
@@ -70,6 +83,26 @@ class Matricula {
     static async getReporte() {
         const [rows] = await db.execute('SELECT * FROM vista_reporte_matricula');
         return rows;
+    }
+
+    static async getStats() {
+        // Obtener total general
+        const [totalRes] = await db.execute('SELECT COUNT(*) as total FROM alumnos');
+        
+        // Obtener distribución por niveles
+        const sqlNiveles = `
+            SELECT n.nombre_nivel as name, COUNT(a.id_alumno) as value
+            FROM niveles n
+            LEFT JOIN cursos c ON n.id_nivel = c.id_nivel
+            LEFT JOIN alumnos a ON c.id_curso = a.id_curso
+            GROUP BY n.nombre_nivel
+        `;
+        const [nivelesRes] = await db.execute(sqlNiveles);
+        
+        return {
+            totalMatriculados: totalRes[0].total,
+            distribucionNiveles: nivelesRes
+        };
     }
 }
 
