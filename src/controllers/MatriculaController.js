@@ -9,7 +9,7 @@ const createMatricula = async (req, res) => {
         if (!alumno || !alumno.rut_estudiante || !alumno.nombres || !alumno.apellido_paterno || !alumno.id_nivel) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Faltan datos obligatorios del alumno (RUT, Nombres, Apellido Paterno y Nivel).' 
+                message: 'Faltan datos obligatorios del alumno (RUT, Nombres, Apellido Paterno y Nivel a Matricular).' 
             });
         }
 
@@ -42,6 +42,14 @@ const createMatricula = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'El sistema de salud (FONASA/ISAPRE) es obligatorio.'
+            });
+        }
+
+        // Validación de autorizaciones (Obligatorio aceptar reglamentos)
+        if (!req.body.autorizaciones || !req.body.autorizaciones.acepta_reglamento_interno) {
+            return res.status(400).json({
+                success: false,
+                message: 'Es obligatorio aceptar el reglamento interno y de convivencia escolar.'
             });
         }
 
