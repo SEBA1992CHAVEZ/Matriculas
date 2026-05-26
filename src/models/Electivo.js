@@ -8,8 +8,8 @@ class Electivo {
             JOIN categorias_electivos c ON e.id_categoria = c.id_categoria
             ORDER BY c.nombre_categoria, e.nombre_electivo
         `;
-        const [rows] = await db.execute(sql);
-        return rows;
+        const res = await db.query(sql);
+        return res.rows;
     }
 }
 

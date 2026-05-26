@@ -22,8 +22,8 @@ const createAlumno = async (req, res) => {
         const id = await Alumno.create(req.body);
         res.status(201).json({ id, message: 'Alumno registrado exitosamente' });
     } catch (error) {
-        // Captura de errores de RUT duplicado o estados de SQL personalizados
-        const isDbConstraint = error.sqlState === '45000' || error.code === 'ER_DUP_ENTRY';
+        // Captura de errores de RUT duplicado (23505) o excepciones de trigger (P0001) en Postgres
+        const isDbConstraint = error.code === 'P0001' || error.code === '23505';
         res.status(isDbConstraint ? 400 : 500).json({ 
             message: isDbConstraint ? error.message : 'Error interno al crear alumno', 
             error: error.message 

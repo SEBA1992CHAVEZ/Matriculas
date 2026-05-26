@@ -7,8 +7,8 @@ class Usuario {
             FROM usuarios u
             JOIN roles r ON u.id_role = r.id_role
         `;
-        const [rows] = await db.execute(sql);
-        return rows;
+        const res = await db.query(sql);
+        return res.rows;
     }
 
     static async create(data) {
@@ -16,37 +16,37 @@ class Usuario {
 
         const sql = `
             INSERT INTO usuarios (username, password_hash, nombre_real, id_role)
-            VALUES (?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4) RETURNING id_usuario
         `;
-        const [result] = await db.execute(sql, [
+        const res = await db.query(sql, [
             username, password_hash, nombre_real || null, id_role
         ]);
-        return result.insertId;
+        return res.rows[0].id_usuario;
     }
 
     static async getByUsername(username) {
-        const sql = 'SELECT * FROM usuarios WHERE username = ?';
-        const [rows] = await db.execute(sql, [username]);
-        return rows[0];
+        const sql = 'SELECT * FROM usuarios WHERE username = $1';
+        const res = await db.query(sql, [username]);
+        return res.rows[0];
     }
 
     static async saveResetToken(id, token, expires) {
-        const sql = 'UPDATE usuarios SET reset_token = ?, reset_expires = ? WHERE id_usuario = ?';
-        await db.execute(sql, [token, expires, id]);
+        const sql = 'UPDATE usuarios SET reset_token = $1, reset_expires = $2 WHERE id_usuario = $3';
+        await db.query(sql, [token, expires, id]);
     }
 
     static async getByResetToken(token) {
-        const sql = 'SELECT * FROM usuarios WHERE reset_token = ? AND reset_expires > NOW()';
-        const [rows] = await db.execute(sql, [token]);
-        return rows[0];
+        const sql = 'SELECT * FROM usuarios WHERE reset_token = $1 AND reset_expires > NOW()';
+        const res = await db.query(sql, [token]);
+        return res.rows[0];
     }
 
     static async updatePassword(id, newPasswordHash) {
         const sql = `
             UPDATE usuarios 
-            SET password_hash = ?, reset_token = NULL, reset_expires = NULL 
-            WHERE id_usuario = ?`;
-        await db.execute(sql, [newPasswordHash, id]);
+            SET password_hash = $1, reset_token = NULL, reset_expires = NULL 
+            WHERE id_usuario = $2`;
+        await db.query(sql, [newPasswordHash, id]);
     }
 }
 

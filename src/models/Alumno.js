@@ -2,16 +2,16 @@ const db = require('../config/db');
 
 class Alumno {
     static async getAll() {
-        const [rows] = await db.execute('SELECT * FROM alumnos'); 
-        return rows;
+        const res = await db.query('SELECT * FROM alumnos'); 
+        return res.rows;
     }
 
     static async create(data) {
-        const { rut_estudiante, nombres, apellido_paterno, apellido_materno, fecha_nacimiento, sexo, id_nivel } = data;
-        const sql = `INSERT INTO alumnos (rut_estudiante, nombres, apellido_paterno, apellido_materno, fecha_nacimiento, sexo, id_nivel) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        const [result] = await db.execute(sql, [rut_estudiante, nombres, apellido_paterno, apellido_materno || null, fecha_nacimiento || null, sexo || null, id_nivel || null]);
-        return result.insertId;
+        const { rut_estudiante, nombres, apellido_paterno, apellido_materno, fecha_nacimiento, sexo, id_curso } = data;
+        const sql = `INSERT INTO alumnos (rut_estudiante, nombres, apellido_paterno, apellido_materno, fecha_nacimiento, sexo, id_curso) 
+                     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id_alumno`;
+        const res = await db.query(sql, [rut_estudiante, nombres, apellido_paterno, apellido_materno || null, fecha_nacimiento || null, sexo || null, id_curso || null]);
+        return res.rows[0].id_alumno;
     }
 
     static async getFullDataByRut(rut) {
@@ -42,16 +42,16 @@ class Alumno {
             LEFT JOIN cursos c ON a.id_curso = c.id_curso
             LEFT JOIN niveles n ON c.id_nivel = n.id_nivel
             LEFT JOIN autorizaciones_alumnos aut ON a.id_alumno = aut.id_alumno
-            LEFT JOIN detalle_apoderados_alumno da1 ON a.id_alumno = da1.id_alumno AND da1.es_titular = 1
+            LEFT JOIN detalle_apoderados_alumno da1 ON a.id_alumno = da1.id_alumno AND da1.es_titular = TRUE
             LEFT JOIN apoderados ap1 ON da1.id_apoderado = ap1.id_apoderado
-            LEFT JOIN detalle_apoderados_alumno da2 ON a.id_alumno = da2.id_alumno AND da2.es_titular = 0
+            LEFT JOIN detalle_apoderados_alumno da2 ON a.id_alumno = da2.id_alumno AND da2.es_titular = FALSE
             LEFT JOIN apoderados ap2 ON da2.id_apoderado = ap2.id_apoderado
-            WHERE a.rut_estudiante = ?
+            WHERE a.rut_estudiante = $1
         `;
-        const [rows] = await db.execute(sql, [rut]);
-        if (rows.length === 0) return null;
+        const res = await db.query(sql, [rut]);
+        if (res.rows.length === 0) return null;
 
-        const student = rows[0];
+        const student = res.rows[0];
         
         // Formatear todas las fechas para que el input type="date" las reconozca
         const formatDate = (date) => date ? new Date(date).toISOString().split('T')[0] : '';

@@ -30,7 +30,7 @@ const createComuna = async (req, res) => {
         const id = await Comuna.create(req.body);
         res.status(201).json({ success: true, id, message: 'Comuna creada exitosamente.' });
     } catch (error) {
-        const isDup = error.code === 'ER_DUP_ENTRY';
+        const isDup = error.code === '23505';
         res.status(isDup ? 400 : 500).json({ 
             success: false, 
             message: isDup ? 'Ya existe esta comuna.' : 'Error al crear comuna', 
@@ -48,7 +48,7 @@ const updateComuna = async (req, res) => {
         await Comuna.update(req.params.id, req.body);
         res.status(200).json({ success: true, message: 'Comuna actualizada correctamente.' });
     } catch (error) {
-        const isDup = error.code === 'ER_DUP_ENTRY';
+        const isDup = error.code === '23505';
         res.status(isDup ? 400 : 500).json({ 
             success: false, 
             message: isDup ? 'Ya existe esta comuna.' : 'Error al actualizar comuna', 
@@ -62,7 +62,7 @@ const deleteComuna = async (req, res) => {
         await Comuna.delete(req.params.id);
         res.status(200).json({ success: true, message: 'Comuna eliminada correctamente.' });
     } catch (error) {
-        const isFkConstraint = error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === 'ER_NO_REFERENCED_ROW_2';
+        const isFkConstraint = error.code === '23503';
         res.status(isFkConstraint ? 400 : 500).json({ 
             success: false, 
             message: isFkConstraint ? 'No se puede eliminar la comuna porque está asociada a instituciones o alumnos.' : 'Error al eliminar comuna', 

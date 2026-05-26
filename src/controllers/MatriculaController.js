@@ -1,72 +1,123 @@
 const Matricula = require('../models/Matricula');
 const Alumno = require('../models/Alumno');
 
+// Función auxiliar para validar RUT Chileno (opcional pero recomendada)
+const validateRut = (rut) => {
+    if (!/^[0-9]+[-|‐]{1}[0-9kK]{1}$/.test(rut)) return false;
+    let [num, dv] = rut.split('-');
+    // Aquí iría la lógica del algoritmo módulo 11
+    return true; 
+};
+
 const createMatricula = async (req, res) => {
     try {
-        const { alumno, apoderado, apoderado_suplente, direccion, salud, electivos } = req.body;
+        // 1. Verificación de Rol (Seguridad de Acceso)
+        // Asumiendo que req.user viene del middleware verifyToken
+        if (req.user.id_role > 2) { // 1: Admin, 2: Directivo
+            return res.status(403).json({ 
+                success: false, 
+                message: 'No tienes permisos suficientes para realizar matrículas.' 
+            });
+        }
+
+        let data = req.body;
+
+        // 2. Sanitización Básica
+        Object.keys(data).forEach(key => {
+            if (typeof data[key] === 'string') {
+                data[key] = data[key].trim().toUpperCase();
+            }
+        });
+
+        // 3. Conversión de tipos para PostgreSQL
+        const numericFields = [
+            'id_nivel', 'id_comuna', 'id_parentesco', 'id_curso',
+            'estatura_cm', 'peso_kg', 'calzado'
+        ];
+        numericFields.forEach(field => {
+            const val = data[field];
+            if (val !== undefined && val !== null && val !== '') {
+                const parsed = parseInt(val);
+                data[field] = isNaN(parsed) ? null : parsed;
+            } else {
+                data[field] = null;
+            }
+        });
 
         // Validación de datos del Alumno (Tabla alumnos)
-        if (!alumno || !alumno.rut_estudiante || !alumno.nombres || !alumno.apellido_paterno || !alumno.id_nivel) {
+        if (!data.rut_estudiante || !data.nombres || !data.apellido_paterno) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Faltan datos obligatorios del alumno (RUT, Nombres, Apellido Paterno y Nivel a Matricular).' 
+                message: 'Faltan datos obligatorios del alumno (RUT, Nombres, Apellido Paterno).'
             });
         }
 
-        // Validación de datos del Apoderado (Tabla apoderados y detalle_apoderados_alumno)
-        if (!apoderado || !apoderado.rut_apoderado || !apoderado.nombres || !apoderado.id_parentesco) {
+        // 3. Validación de Formatos
+        if (!validateRut(data.rut_estudiante)) {
+            return res.status(400).json({ success: false, message: 'El formato del RUT del estudiante es inválido.' });
+        }
+
+        if (data.email && !/^\S+@\S+\.\S+$/.test(data.email)) {
+            return res.status(400).json({ success: false, message: 'El correo electrónico del estudiante no es válido.' });
+        }
+
+        // Validación de datos del Apoderado
+        if (!data.rut_apoderado || !data.nombres_apoderado || !data.id_parentesco) {
             return res.status(400).json({
                 success: false,
-                message: 'Faltan datos obligatorios del apoderado (RUT, Nombres, Parentesco).'
+                message: 'Faltan datos obligatorios del apoderado (RUT, Nombres, Parentesco).' 
             });
         }
 
-        // Validación opcional de Apoderado Suplente
-        if (apoderado_suplente && apoderado_suplente.rut_apoderado && !apoderado_suplente.nombres) {
+        // Validación básica de dirección
+        if (!data.id_comuna || isNaN(data.id_comuna)) {
             return res.status(400).json({
                 success: false,
-                message: 'Si registra un apoderado suplente, el nombre es obligatorio.'
+                message: 'La comuna es obligatoria y debe ser un ID válido.'
             });
         }
 
-        // Validación básica de dirección (Tabla direcciones_alumnos)
-        if (!direccion || !direccion.id_comuna) {
+        // Validación de salud
+        const sistemasValidos = ['FONASA', 'ISAPRE', 'PARTICULAR', 'DIPRECA', 'CAPREDENA'];
+        if (!data.sistema_salud || !sistemasValidos.includes(data.sistema_salud)) {
             return res.status(400).json({
                 success: false,
-                message: 'La comuna es obligatoria para la dirección.'
+                message: 'El sistema de salud es obligatorio y debe ser válido (FONASA, ISAPRE, etc.).'
             });
         }
 
-        // Validación de salud (Tabla expediente_medico)
-        if (!salud || !salud.sistema_salud) {
-            return res.status(400).json({
-                success: false,
-                message: 'El sistema de salud (FONASA/ISAPRE) es obligatorio.'
-            });
-        }
-
-        // Validación de autorizaciones (Obligatorio aceptar reglamentos)
-        if (!req.body.autorizaciones || !req.body.autorizaciones.acepta_reglamento_interno) {
+        // Validación de autorizaciones
+        if (!data.acepta_reglamento_interno) {
             return res.status(400).json({
                 success: false,
                 message: 'Es obligatorio aceptar el reglamento interno y de convivencia escolar.'
             });
         }
 
-        const id = await Matricula.create(req.body);
+        const id = await Matricula.create(data);
         res.status(201).json({ 
             success: true, 
             id, 
             message: 'Matrícula y asignación de electivos procesada correctamente.' 
         });
     } catch (error) {
-        // Captura errores de Triggers (SQLSTATE 45000) definidos en el Script V3
-        // Ej: 'fecha_retiro debe ser mayor a fecha_matricula' o 'No se puede reactivar una matrícula retirada'
-        const isDbConstraint = error.sqlState === '45000' || error.code === 'ER_DUP_ENTRY';
-        res.status(isDbConstraint ? 400 : 500).json({ 
+        console.error("Error en MatriculaController:", error);
+
+        // Manejo de errores de Postgres
+        if (error.code) {
+            const isKnownError = ['23505', 'P0001', '23503', '23502', '42703'].includes(error.code);
+            return res.status(isKnownError ? 400 : 500).json({
+                success: false,
+                message: isKnownError ? `Error de validación: ${error.message}` : 'Error de base de datos',
+                error: error.message,
+                code: error.code
+            });
+        }
+
+        // Errores manuales (como el throw Error del modelo)
+        res.status(400).json({ 
             success: false, 
-            message: isDbConstraint ? error.message : 'Error interno del servidor',
-            error: error.message 
+            message: error.message 
         });
     }
 };

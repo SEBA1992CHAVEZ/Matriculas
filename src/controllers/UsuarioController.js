@@ -34,13 +34,13 @@ const createUsuario = async (req, res) => {
         res.status(201).json({ success: true, id, message: 'Usuario creado exitosamente.' });
     } catch (error) {
         const errorMap = {
-            'ER_DUP_ENTRY': 'El nombre de usuario ya existe.',
-            'ER_CHECK_CONSTRAINT_VIOLATED': 'El usuario debe tener al menos 4 caracteres.',
-            'ER_NO_REFERENCED_ROW_2': 'El rol especificado no es válido.',
+            '23505': 'El nombre de usuario ya existe.',
+            '23514': 'El usuario debe tener al menos 4 caracteres.',
+            '23503': 'El rol especificado no es válido.',
         };
         
-        const message = errorMap[error.code] || (error.sqlState === '45000' ? error.message : 'Error interno del servidor');
-        const statusCode = (errorMap[error.code] || error.sqlState === '45000') ? 400 : 500;
+        const message = errorMap[error.code] || (error.code === 'P0001' ? error.message : 'Error interno del servidor');
+        const statusCode = (errorMap[error.code] || error.code === 'P0001') ? 400 : 500;
 
         res.status(statusCode).json({
             success: false,

@@ -46,7 +46,7 @@ const createApoderado = async (req, res) => {
         const id = await Apoderado.create(req.body);
         res.status(201).json({ success: true, id, message: 'Apoderado creado exitosamente.' });
     } catch (error) {
-        const isDup = error.code === 'ER_DUP_ENTRY';
+        const isDup = error.code === '23505'; // Código de violación de unicidad en Postgres
         res.status(isDup ? 400 : 500).json({ 
             success: false, 
             message: isDup ? 'El RUT del apoderado ya existe.' : 'Error al crear apoderado', 
@@ -83,7 +83,7 @@ const deleteApoderado = async (req, res) => {
         await Apoderado.delete(req.params.id);
         res.status(200).json({ success: true, message: 'Apoderado eliminado correctamente.' });
     } catch (error) {
-        const isFkConstraint = error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === 'ER_NO_REFERENCED_ROW_2';
+        const isFkConstraint = error.code === '23503'; // Código de violación de llave foránea en Postgres
         res.status(isFkConstraint ? 400 : 500).json({ 
             success: false, 
             message: isFkConstraint ? 'No se puede eliminar el apoderado porque está asociado a uno o más alumnos.' : 'Error al eliminar apoderado', 
